@@ -112,7 +112,7 @@
 <ins class="adsbygoogle"
      style="display:block"
      data-ad-client="ca-pub-2654167674032555"
-     data-ad-slot="4809855349"
+     data-ad-sl ot="4809855349"
      data-ad-format="auto"
      data-full-width-responsive="true"></ins>
 <script>
@@ -135,6 +135,12 @@ window.addEventListener("load", () => {
               placeholder="Wpisz tekst tutaj..."></textarea><br><br>
     <button onclick="loadText()">Załaduj tekst</button>
 </div>
+<label for="phoneticMode">Tryb fonetyczny:</label>
+<select id="phoneticMode">
+    <option value="standard">Standardowy</option>
+    <option value="phonetic">Fonetyczny </option>
+</select>
+
 
 <hr>
 
@@ -163,6 +169,8 @@ const digraphs = {
 
 // --- MAPA FONETYCZNA ---
 const phoneticMap = {
+    standard: {},
+    phonetic: {
     "A": "a",  "Ą": "ą",
     "B": "by",
     "C": "cy",  "Ć": "ci",
@@ -189,6 +197,7 @@ const phoneticMap = {
     "X": "ksy",
     "Y": "igrek",
     "Z": "zy",  "Ż": "ży", "Ź": "źi"
+    }
 };
 
 // --- SPECJALNE SYLABY ---
@@ -220,13 +229,21 @@ const validOnsets = [
 ];
 
 // --- GŁOSY ---
-let voices = [];
-function loadVoices() {
-    voices = speechSynthesis.getVoices();
-    if (!voices.length) setTimeout(loadVoices, 100);
-}
-loadVoices();
+// FALLBACK — sprawdzamy, czy API istnieje
+if (!("speechSynthesis" in window))
+{ 
+    alert("Twoja przeglądarka nie obsługuje syntezy mowy.");
 
+ }
+ else
+ {
+    let voices = [];
+    function loadVoices() {
+        voices = speechSynthesis.getVoices();
+        if (!voices.length) setTimeout(loadVoices, 100);
+    }
+    loadVoices();
+ }
 // --- ZMIENNE ---
 let sentences = [];
 let currentIndex = 0;
@@ -385,6 +402,20 @@ function syllabify(word) {
     syl.push(units.slice(start).join(""));
     return syl;
 }
+function applyPhoneticMap(unit) {
+    const mode = document.getElementById("phoneticMode").value;
+    const map = phoneticMaps[mode];
+
+    const lower = unit.toLowerCase();
+    const upper = unit.toUpperCase();
+
+    return (
+        specialSyllables[lower] ||
+        digraphs[lower] ||
+        map[upper] ||
+        lower
+    );
+}
 
 
 // --- MÓWIENIE JEDNOSTKI ---
@@ -394,11 +425,7 @@ function speakUnit(unit) {
     const lower = unit.toLowerCase();
     const upper = unit.toUpperCase();
 
-    let sound =
-        specialSyllables[lower] ||
-        digraphs[lower] ||
-        phoneticMap[upper] ||
-        lower;
+let sound = applyPhoneticMap(unit);
 
     const utter = new SpeechSynthesisUtterance(sound);
     utter.lang = "pl-PL";
